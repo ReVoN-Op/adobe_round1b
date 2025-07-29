@@ -113,5 +113,74 @@ python run_example.py --persona business_consultant
 - **Output Generator**: Structured JSON formatting
 
 ## 📝 Technical Details
+🔍 Logic for Round 1B: Policy-Aware PDF Content Extractor
+This solution intelligently extracts relevant policy-related content (e.g., GDPR, privacy, confidentiality) from PDF documents using semantic similarity between the document and the user’s intent (persona + task).
 
+📌 Input to the System
+PDF document (uploaded by user)
+
+Persona (e.g., "Legal Analyst with expertise in GDPR and privacy")
+
+Job-to-be-done (e.g., "Extract all GDPR and confidentiality-related clauses")
+
+🧠 Core Extraction Logic
+1. Text Extraction from PDF (via PyMuPDF)
+Each PDF page is parsed to extract:
+
+Full text
+
+Block-wise or paragraph-level chunks
+
+Unicode control characters are removed, and empty lines are filtered out.
+
+Each paragraph is stored along with its corresponding page number.
+
+2. Sentence Embedding (via sentence-transformers)
+A semantic vector (embedding) is generated for:
+
+The persona + task input → forms the query embedding
+
+Each paragraph/chunk from the PDF → forms the document embeddings
+
+3. Semantic Similarity Scoring
+Cosine similarity is calculated between the query embedding and each paragraph embedding.
+
+Paragraphs with similarity scores above a configurable threshold (e.g., 0.45–0.65) are marked as relevant.
+
+4. Relevance Filtering
+Top-N or all relevant matches are extracted.
+
+Each matched paragraph is returned with:
+
+page number
+
+text content
+
+similarity score
+
+5. API Response Construction (FastAPI)
+The response JSON includes:
+
+json
+Copy
+Edit
+{
+  "persona": "Legal Analyst with expertise in GDPR and privacy",
+  "job": "Extract clauses...",
+  "matches": [
+    {
+      "page": 4,
+      "score": 0.74,
+      "text": "All personal data collected under this agreement shall comply with GDPR regulations..."
+    },
+    ...
+  ]
+}
+⚙️ Summary of Key Logic Components
+Step	Tool/Method	Description
+Text Extraction	PyMuPDF (fitz)	Reads PDF page-wise text
+Semantic Encoding	sentence-transformers	Converts persona, job, and paragraphs to embeddings
+Matching	cosine similarity	Measures alignment between intent and content
+Filtering & Ranking	Threshold-based scoring	Filters only meaningful matches
+Output	JSON (via FastAPI)	Returns relevant text and page info
 See `approach_explanation.md` for detailed technical approach and implementation details.
